@@ -41,7 +41,7 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1 className="app-title">🎵 Chinook DB — Consultas en Lenguaje Natural</h1>
+        <h1 className="app-title">Chinook DB — Consultas en Lenguaje Natural</h1>
         <p className="app-subtitle">Impulsado por IA + Model Context Protocol (MCP)</p>
       </header>
 
