@@ -1,7 +1,6 @@
-import OpenAI from 'openai';
-import { McpClientService, McpTool } from './mcpClient.js';
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+import { McpClientService } from './mcpClient.js';
+import { ToolResult } from './llm/ILlmProvider.js';
+import { createLlmProvider } from './llm/llmProviderFactory.js';
 
 const SYSTEM_PROMPT = `Eres un asistente experto en la base de datos Chinook, una base de datos de música digital.
 La base de datos contiene información sobre artistas, álbumes, canciones, clientes, facturas y empleados.
@@ -22,86 +21,54 @@ export interface LlmResponse {
   naturalLanguageAnswer: string;
 }
 
-function mcpToolsToOpenAITools(tools: McpTool[]): OpenAI.Chat.ChatCompletionTool[] {
-  return tools.map((tool) => ({
-    type: 'function' as const,
-    function: {
-      name: tool.name,
-      description: tool.description ?? '',
-      parameters: tool.inputSchema,
-    },
-  }));
-}
-
 export async function processQuestion(
   question: string,
   mcpClient: McpClientService
 ): Promise<LlmResponse> {
+  const provider = createLlmProvider();
   const mcpTools = await mcpClient.listTools();
-  const openAITools = mcpToolsToOpenAITools(mcpTools);
-
-  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: 'system', content: SYSTEM_PROMPT },
-    { role: 'user', content: question },
-  ];
+  provider.initTools(mcpTools);
 
   let generatedSQL = '';
   let rawResults: Record<string, unknown>[] = [];
 
-  // Bucle agentico: el LLM puede hacer múltiples tool calls
-  while (true) {
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages,
-      tools: openAITools,
-      tool_choice: 'auto',
-    });
+  // Primer turno: enviar la pregunta del usuario
+  let turn = await provider.startConversation(SYSTEM_PROMPT, question);
 
-    const choice = response.choices[0];
-    const assistantMessage = choice.message;
-    messages.push(assistantMessage);
+  // Bucle agéntico: el LLM puede hacer múltiples tool calls antes de responder
+  while (!turn.finished) {
+    const toolResults: ToolResult[] = [];
 
-    // Si no hay más tool calls, el LLM ya terminó
-    if (choice.finish_reason === 'stop' || !assistantMessage.tool_calls?.length) {
-      return {
-        generatedSQL,
-        rawResults,
-        naturalLanguageAnswer: assistantMessage.content ?? 'No se pudo generar una respuesta.',
-      };
-    }
-
-    // Ejecutar cada tool call vía MCP (solo tipo 'function')
-    const functionCalls = assistantMessage.tool_calls.filter((tc) => tc.type === 'function');
-    for (const toolCall of functionCalls) {
-      const fn = (toolCall as { type: 'function'; id: string; function: { name: string; arguments: string } }).function;
-      const toolName = fn.name;
-      const toolArgs = JSON.parse(fn.arguments) as Record<string, unknown>;
-
-      let toolResult: string;
+    for (const toolCall of turn.toolCalls ?? []) {
+      let content: string;
 
       try {
-        toolResult = await mcpClient.callTool(toolName, toolArgs);
+        content = await mcpClient.callTool(toolCall.name, toolCall.args);
 
-        // Capturar el SQL generado si es execute_query
-        if (toolName === 'execute_query' && toolArgs.sql) {
-          generatedSQL = toolArgs.sql as string;
+        // Capturar SQL y resultados si es execute_query
+        if (toolCall.name === 'execute_query' && toolCall.args.sql) {
+          generatedSQL = toolCall.args.sql as string;
           try {
-            const parsed = JSON.parse(toolResult) as { rows?: Record<string, unknown>[] };
+            const parsed = JSON.parse(content) as { rows?: Record<string, unknown>[] };
             rawResults = parsed.rows ?? [];
           } catch {
             rawResults = [];
           }
         }
       } catch (error) {
-        const err = error as Error;
-        toolResult = JSON.stringify({ error: err.message });
+        content = JSON.stringify({ error: (error as Error).message });
       }
 
-      messages.push({
-        role: 'tool',
-        tool_call_id: toolCall.id,
-        content: toolResult,
-      });
+      toolResults.push({ toolCallId: toolCall.id, name: toolCall.name, content });
     }
+
+    // Devolver los resultados al proveedor para continuar
+    turn = await provider.sendToolResults(toolResults);
   }
+
+  return {
+    generatedSQL,
+    rawResults,
+    naturalLanguageAnswer: turn.content ?? 'No se pudo generar una respuesta.',
+  };
 }
