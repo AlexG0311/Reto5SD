@@ -42,7 +42,7 @@ function App() {
     <div className="app">
       <header className="app-header">
         <h1 className="app-title">🎵 Chinook DB — Consultas en Lenguaje Natural</h1>
-        <p className="app-subtitle">Impulsado por GPT-4o + Model Context Protocol (MCP)</p>
+        <p className="app-subtitle">Impulsado por IA + Model Context Protocol (MCP)</p>
       </header>
 
       <main className="app-main">
