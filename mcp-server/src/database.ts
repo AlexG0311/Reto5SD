@@ -1,18 +1,11 @@
-import Database from 'better-sqlite3';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { IDatabase } from './db/IDatabase.js';
+import { createDbProvider } from './db/dbProviderFactory.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+let instance: IDatabase;
 
-const DB_PATH = path.resolve(__dirname, '../../Chinook_Sqlite.sqlite');
-
-let db: Database.Database;
-
-export function getDatabase(): Database.Database {
-  if (!db) {
-    db = new Database(DB_PATH, { readonly: true });
-    db.pragma('journal_mode = WAL');
+export function getDatabase(): IDatabase {
+  if (!instance) {
+    instance = createDbProvider();
   }
-  return db;
+  return instance;
 }

@@ -45,7 +45,7 @@ export class GoogleProvider implements ILlmProvider {
     const parts = results.map((r) => ({
       functionResponse: {
         name: r.name,
-        response: this.tryParseJson(r.content),
+        response: { output: r.content }, // ← siempre objeto plano con string
       },
     }));
 

@@ -1,17 +1,13 @@
 import { getDatabase } from '../database.js';
 import { logToolInvocation } from '../logger.js';
 
-export function listTables(): string[] {
+export async function listTables(): Promise<string[]> {
   const start = Date.now();
   const tool = 'list_tables';
 
   try {
     const db = getDatabase();
-    const rows = db
-      .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name`)
-      .all() as { name: string }[];
-
-    const tables = rows.map((r) => r.name);
+    const tables = await db.listTables();
 
     logToolInvocation({
       timestamp: new Date().toISOString(),

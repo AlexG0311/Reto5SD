@@ -1,3 +1,5 @@
+import 'dotenv/config';
+import 'dotenv/config';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
@@ -18,7 +20,7 @@ server.registerTool(
     inputSchema: {},
   },
   async () => {
-    const tables = listTables();
+    const tables = await listTables();
     return {
       content: [{ type: 'text', text: JSON.stringify(tables, null, 2) }],
     };
@@ -35,7 +37,7 @@ server.registerTool(
     }),
   },
   async ({ tableName }) => {
-    const schema = getSchema(tableName);
+    const schema = await getSchema(tableName);
     return {
       content: [{ type: 'text', text: JSON.stringify(schema, null, 2) }],
     };
@@ -52,7 +54,7 @@ server.registerTool(
     }),
   },
   async ({ sql }) => {
-    const result = executeQuery(sql);
+    const result = await executeQuery(sql);
     return {
       content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
     };

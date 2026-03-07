@@ -11,7 +11,7 @@ export interface QueryResult {
   truncated: boolean;
 }
 
-export function executeQuery(sql: string): QueryResult {
+export async function executeQuery(sql: string): Promise<QueryResult> {
   const start = Date.now();
   const tool = 'execute_query';
   const input = { sql };
@@ -35,8 +35,7 @@ export function executeQuery(sql: string): QueryResult {
   // 2. Ejecutar la query
   try {
     const db = getDatabase();
-    const stmt = db.prepare(sql);
-    const allRows = stmt.all() as Record<string, unknown>[];
+    const allRows = await db.query(sql);
 
     const truncated = allRows.length > MAX_ROWS;
     const rows = truncated ? allRows.slice(0, MAX_ROWS) : allRows;
