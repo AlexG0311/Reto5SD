@@ -1,26 +1,20 @@
-import { getDatabase } from '../database.js';
-import { validateSelectOnly } from '../validator.js';
+import { QueryExecutor, QueryExecutionResult } from '../services/queryExecutor.js';
+import { QueryValidator } from '../services/queryValidator.js';
 import { logToolInvocation } from '../logger.js';
 
-const MAX_ROWS = 500;
-
-export interface QueryResult {
-  columns: string[];
-  rows: Record<string, unknown>[];
-  rowCount: number;
-  truncated: boolean;
-}
+export type QueryResult = QueryExecutionResult;
 
 export async function executeQuery(sql: string): Promise<QueryResult> {
   const start = Date.now();
   const tool = 'execute_query';
   const input = { sql };
+  const validator = new QueryValidator();
+  const executor = new QueryExecutor();
 
   // 1. Validar antes de cualquier interacción con la DB
-  try {
-    validateSelectOnly(sql);
-  } catch (validationError: unknown) {
-    const message = validationError instanceof Error ? validationError.message : String(validationError);
+  const validation = validator.validate(sql);
+  if (!validation.valid) {
+    const message = validation.errors.join('; ');
     logToolInvocation({
       timestamp: new Date().toISOString(),
       tool,
@@ -29,33 +23,23 @@ export async function executeQuery(sql: string): Promise<QueryResult> {
       error: `VALIDATION_ERROR: ${message}`,
       durationMs: Date.now() - start,
     });
-    throw validationError;
+    throw new Error(message);
   }
 
-  // 2. Ejecutar la query
+  // 2. Ejecutar la query (solo si la validación fue exitosa)
   try {
-    const db = getDatabase();
-    const allRows = await db.query(sql);
-
-    const truncated = allRows.length > MAX_ROWS;
-    const rows = truncated ? allRows.slice(0, MAX_ROWS) : allRows;
-    const columns = rows.length > 0 ? Object.keys(rows[0]) : [];
+    const result = await executor.execute(sql);
 
     logToolInvocation({
       timestamp: new Date().toISOString(),
       tool,
       input,
       sql,
-      rowCount: rows.length,
+      rowCount: result.rowCount,
       durationMs: Date.now() - start,
     });
 
-    return {
-      columns,
-      rows,
-      rowCount: rows.length,
-      truncated,
-    };
+    return result;
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     logToolInvocation({
