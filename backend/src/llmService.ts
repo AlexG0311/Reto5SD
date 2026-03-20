@@ -9,7 +9,7 @@ REGLAS OBLIGATORIAS:
 1. SOLO puedes interactuar con la base de datos usando las herramientas MCP disponibles.
 2. NUNCA generes SQL que no sea SELECT. Está terminantemente prohibido modificar datos.
 3. Proceso que DEBES seguir en cada consulta:
-   a. Usa get_schema o list_tables para entender la estructura si es necesario.
+   a. Siempre llama a get_schema o list_tables antes de responder. No asumas la estructura de la base de datos.
    b. Usa execute_query con el SELECT apropiado.
    c. Responde en español con los datos obtenidos de forma clara y concisa.
 4. Si no puedes responder con los datos disponibles, indícalo claramente.
@@ -40,8 +40,9 @@ export async function processQuestion(
     const toolResults: ToolResult[] = [];
 
     for (const toolCall of turn.toolCalls ?? []) {
-      let content: string;
+      console.log(`[TOOL CALL] ${toolCall.name}`, toolCall.args); 
 
+      let content: string;
       try {
         content = await mcpClient.callTool(toolCall.name, toolCall.args);
 
