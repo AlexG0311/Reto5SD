@@ -2,36 +2,32 @@ import { Router, Request, Response } from 'express';
 import { McpClientService } from '../mcpClient.js';
 import { processQuestion } from '../llmService.js';
 
-const router = Router();
+export default function createQueryRouter(mcpClient: McpClientService): Router {
+  const router = Router();
 
-router.post('/', async (req: Request, res: Response) => {
-  const { question } = req.body as { question?: string };
+  router.post('/', async (req: Request, res: Response) => {
+    const { question } = req.body as { question?: string };
 
-  if (!question || question.trim() === '') {
-    res.status(400).json({ error: 'El campo "question" es requerido.' });
-    return;
-  }
+    if (!question || question.trim() === '') {
+      res.status(400).json({ error: 'El campo "question" es requerido.' });
+      return;
+    }
 
-  const mcpClient = new McpClientService();
+    try {
+      const result = await processQuestion(question.trim(), mcpClient);
 
-  try {
-    await mcpClient.connect();
+      res.json({
+        question: question.trim(),
+        generatedSQL: result.generatedSQL,
+        rawResults: result.rawResults,
+        naturalLanguageAnswer: result.naturalLanguageAnswer,
+      });
+    } catch (error) {
+      const err = error as Error;
+      console.error('[/api/query] Error:', err.message);
+      res.status(500).json({ error: err.message });
+    }
+  });
 
-    const result = await processQuestion(question.trim(), mcpClient);
-
-    res.json({
-      question: question.trim(),
-      generatedSQL: result.generatedSQL,
-      rawResults: result.rawResults,
-      naturalLanguageAnswer: result.naturalLanguageAnswer,
-    });
-  } catch (error) {
-    const err = error as Error;
-    console.error('[/api/query] Error:', err.message);
-    res.status(500).json({ error: err.message });
-  } finally {
-    await mcpClient.close();
-  }
-});
-
-export default router;
+  return router;
+}
