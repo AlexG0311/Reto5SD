@@ -35,7 +35,13 @@ export class GoogleProvider implements ILlmProvider {
       },
     });
 
-    const response = await this.chat.sendMessage({ message: userMessage });
+    const response = (await Promise.race([
+      this.chat.sendMessage({ message: userMessage }),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('LLM timeout')), 10000) // 1s timeout
+      )
+    ])) as GenerateContentResponse;
+
     return this.parseResponse(response);
   }
 
