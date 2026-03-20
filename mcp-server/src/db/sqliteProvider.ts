@@ -13,8 +13,8 @@ export class SQLiteProvider implements IDatabase {
     const dbPath = process.env.SQLITE_PATH ?? path.resolve(__dirname, '../../../Chinook_Sqlite.sqlite');
     // readonly:false es necesario para que SQLite pueda gestionar el WAL.
     // La seguridad de solo-lectura se garantiza en el validator.ts (solo SELECT).
-    this.db = new Database(dbPath, { readonly: false });
-    this.db.pragma('journal_mode = WAL');
+    this.db = new Database(dbPath, { readonly: true });
+
   }
 
   async query(sql: string): Promise<Record<string, unknown>[]> {
