@@ -25,7 +25,7 @@ async function bootstrap(): Promise<void> {
 
   app.listen(PORT, () => {
     console.log(`[Backend] Servidor corriendo en http://localhost:${PORT}`);
-    console.log(`[Backend] OpenAI API Key: ${process.env.OPENAI_API_KEY ? '✅ configurada' : '❌ NO configurada'}`);
+    console.log(`[Backend] Google AI Key: ${process.env.GOOGLE_API_KEY ? 'configurada' : ' NO configurada'}`);
   });
 }
 
