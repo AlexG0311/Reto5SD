@@ -180,7 +180,7 @@
   background: #1e293b;
   border: 1px solid #334155;
   border-radius: 12px;
-  padding: 1.25rem;
+  padding: 20px;
 }
 
 .section-title {
@@ -223,6 +223,7 @@
   font-size: 0.95rem;
   line-height: 1.7;
   margin: 0;
+  padding: 0.75rem 1rem;
 }
 
 /* ─── Data Table ─────────────────────────────────────────── */
