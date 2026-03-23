@@ -1,5 +1,6 @@
 import type { QueryResponse } from '../types';
 import DataTable from './DataTable';
+import ReactMarkdown from 'react-markdown';
 
 interface ResultPanelProps {
   result: QueryResponse;
@@ -29,7 +30,7 @@ export default function ResultPanel({ result }: ResultPanelProps) {
         )}
       </section>
 
-      {/* Sección 3: Resultado de la BD */}
+      {/* Sección 3: Resultado de la BD*/}
       <section className="result-section">
         <h3 className="section-title">
           <span className="section-icon">📊</span> Resultado de la base de datos
@@ -42,7 +43,9 @@ export default function ResultPanel({ result }: ResultPanelProps) {
         <h3 className="section-title">
           <span className="section-icon">💬</span> Respuesta
         </h3>
-        <p className="natural-answer">{result.naturalLanguageAnswer}</p>
+        <div className="natural-answer prose prose-sm max-w-none">
+          <ReactMarkdown>{result.naturalLanguageAnswer}</ReactMarkdown>
+        </div>
       </section>
 
     </div>
