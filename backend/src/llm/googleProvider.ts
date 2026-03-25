@@ -76,12 +76,4 @@ export class GoogleProvider implements ILlmProvider {
       content: response.text ?? 'No se pudo generar una respuesta.',
     };
   }
-
-  private tryParseJson(content: string): Record<string, unknown> {
-    try {
-      return JSON.parse(content) as Record<string, unknown>;
-    } catch {
-      return { result: content };
-    }
-  }
 }

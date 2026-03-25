@@ -13,7 +13,8 @@ REGLAS OBLIGATORIAS:
    b. Usa execute_query con el SELECT apropiado.
    c. Responde en español con los datos obtenidos de forma clara y concisa.
 4. Si no puedes responder con los datos disponibles, indícalo claramente.
-5. Para números monetarios, muestra el símbolo de moneda apropiado.`;
+5. Para números monetarios, muestra el símbolo de moneda apropiado.
+6. Si la pregunta no tiene nada que ver con la base de datos, responde que solo puedes responder preguntas relacionadas con la base de datos Chinook.`;
 
 export interface LlmResponse {
   generatedSQL: string;
@@ -36,7 +37,11 @@ export async function processQuestion(
   let turn = await provider.startConversation(SYSTEM_PROMPT, question);
 
   // Bucle agéntico: el LLM puede hacer múltiples tool calls antes de responder
-  while (!turn.finished) {
+  const MAX_TOOL_TURNS = 10;
+  let turnCount = 0;
+
+  while (!turn.finished && turnCount < MAX_TOOL_TURNS) {
+    turnCount++;
     const toolResults: ToolResult[] = [];
 
     for (const toolCall of turn.toolCalls ?? []) {
@@ -65,6 +70,10 @@ export async function processQuestion(
 
     // Devolver los resultados al proveedor para continuar
     turn = await provider.sendToolResults(toolResults);
+  }
+
+  if (turnCount >= MAX_TOOL_TURNS) {
+    console.warn(`[LLM] Se alcanzó el límite de ${MAX_TOOL_TURNS} turnos de herramientas.`);
   }
 
   return {

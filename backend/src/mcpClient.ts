@@ -57,7 +57,7 @@ export class McpClientService {
     const textContent = result.content.find((c) => c.type === 'text');
     return textContent?.text ?? '';
   }
-
+  
   async close(): Promise<void> {
     await this.client.close();
   }

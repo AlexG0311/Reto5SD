@@ -11,8 +11,8 @@ export class SQLiteProvider implements IDatabase {
 
   constructor() {
     const dbPath = process.env.SQLITE_PATH ?? path.resolve(__dirname, '../../../Chinook_Sqlite.sqlite');
-    // readonly:false es necesario para que SQLite pueda gestionar el WAL.
-    // La seguridad de solo-lectura se garantiza en el validator.ts (solo SELECT).
+    // readonly:true bloquea escrituras a nivel de SQLite como capa extra de seguridad.
+    // La validación de solo-SELECT se aplica también en validator.ts.
     this.db = new Database(dbPath, { readonly: true });
 
   }
